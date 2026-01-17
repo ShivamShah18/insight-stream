@@ -1,0 +1,25 @@
+{
+	"name": "insight-stream",
+	"main": "src/index.ts",
+	"compatibility_date": "2024-09-23",
+	"observability": {
+	  "enabled": true
+	},
+	"d1_databases": [
+	  {
+		"binding": "DB",
+		"database_name": "insight-db",
+		"database_id": "acab0cc9-0153-42ea-9aa0-3c24d3db4e70"
+	  }
+	],
+	"ai": {
+	  "binding": "AI"
+	},
+	"workflows": [
+	  {
+		"name": "analysis-workflow",
+		"binding": "ANALYSIS_WORKFLOW",
+		"class_name": "AnalysisWorkflow"
+	  }
+	]
+  }
