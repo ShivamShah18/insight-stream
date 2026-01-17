@@ -1,7 +1,7 @@
 import { WorkflowEntrypoint, WorkflowStep, WorkflowEvent } from 'cloudflare:workers';
 
 type Env = {
-  AI: Ai;
+  AI: any;
   DB: D1Database;
 };
 
@@ -14,44 +14,72 @@ export class AnalysisWorkflow extends WorkflowEntrypoint<Env, Params> {
   async run(event: WorkflowEvent<Params>, step: WorkflowStep) {
     const { feedbackId, text } = event.payload;
 
-    // Step 1: Analyze with AI
-    const analysis = await step.do('analyze-feedback', async () => {
-      const messages = [
-        { 
-          role: 'system', 
-          content: `You are a Senior Product Manager at Cloudflare. Analyze this user feedback.
-          
-          Return a valid JSON object with these exact keys:
-          - sentiment: "Positive", "Neutral", or "Negative"
-          - category: "Bug", "Feature Request", "Documentation", or "Pricing"
-          - urgency: "High", "Medium", or "Low" (High = security issues, outages, or blockers)
-          - action_item: A short, 3-5 word strategic next step (e.g., "Open JIRA Ticket", "Update Docs", "Notify Sales").`
-        },
-        { role: 'user', content: text }
-      ];
+    // Step 1: AI Analysis (STRICT MODE)
+    const analysis = await step.do('ai-analysis', async () => {
+        const messages = [
+            { 
+            role: 'system', 
+            content: `You are a strict Technical Product Manager. Analyze this feedback and assign a "base_score" (0-100) based on BUSINESS RISK.
+
+            SCORING RULES:
+            - 90-100: CRITICAL OUTAGE (Site down, Payments failing, Security leak).
+            - 60-89: MAJOR BUG (Feature broken, Login failed, Error messages).
+            - 30-59: FEATURE REQUEST (Dark mode, New buttons, Enhancements).
+            - 0-29: COSMETIC / TRIVIAL (Typos, Colors, Copyright dates).
+
+            Return valid JSON only:
+            {
+              "sentiment": "Positive" | "Neutral" | "Negative",
+              "category": "Bug" | "Feature Request" | "Docs" | "Outage",
+              "urgency": "High" | "Medium" | "Low",
+              "base_score": <number based on rules above>,
+              "action_item": "<2-5 word command>"
+            }`
+            },
+            { role: 'user', content: text }
+        ];
       
       try {
-        const response = await this.env.AI.run('@cf/meta/llama-3-8b-instruct', {
-            messages,
-            max_tokens: 150
-        });
+        const response: any = await this.env.AI.run('@cf/meta/llama-3-8b-instruct', { messages });
         
-        // Robust JSON parsing (handles if AI adds extra text)
-        const raw = (response as any).response || "{}";
+        const raw = response.response || "{}";
         const jsonMatch = raw.match(/\{[\s\S]*\}/);
-        const jsonStr = jsonMatch ? jsonMatch[0] : "{}";
-        return JSON.parse(jsonStr);
+        if (!jsonMatch) throw new Error("No JSON found");
+        
+        return JSON.parse(jsonMatch[0]);
       } catch (e) {
-        // Fallback if AI fails (e.g. offline)
-        return { sentiment: "Neutral", category: "General", urgency: "Low", action_item: "Review Manually" };
+        return { sentiment: "Neutral", category: "General", urgency: "Low", base_score: 10, action_item: "Manual Review" };
       }
     });
 
-    // Step 2: Save to Database
+    // Step 2: Volume Logic (Dampened)
+    const finalScore = await step.do('calculate-volume', async () => {
+        const result = await this.env.DB.prepare(
+            "SELECT COUNT(*) as count FROM feedback WHERE category = ?"
+        ).bind(analysis.category || "General").first();
+
+        const count = (result as any).count || 0;
+        const aiScore = analysis.base_score || 0;
+        
+        // Multiplier reduced to 3 (prevent runaway scores)
+        // Feature Request (40) + 10 votes (30) = 70. Still less than Outage (90).
+        return Math.min(100, aiScore + (count * 3));
+    });
+
+    // Step 3: Save
     await step.do('save-to-db', async () => {
-      await this.env.DB.prepare(
-        `UPDATE feedback SET sentiment = ?, category = ?, urgency = ?, action_item = ?, status = 'COMPLETED' WHERE id = ?`
-      ).bind(analysis.sentiment, analysis.category, analysis.urgency, analysis.action_item, feedbackId).run();
+        await this.env.DB.prepare(
+            `UPDATE feedback 
+             SET sentiment = ?, category = ?, urgency = ?, action_item = ?, impact_score = ?, status = 'READY' 
+             WHERE id = ?`
+          ).bind(
+            analysis.sentiment, 
+            analysis.category, 
+            analysis.urgency, 
+            analysis.action_item, 
+            finalScore,
+            feedbackId
+          ).run();
     });
   }
 }

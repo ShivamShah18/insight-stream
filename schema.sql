@@ -6,6 +6,7 @@ CREATE TABLE IF NOT EXISTS feedback (
   category TEXT,
   urgency TEXT,
   action_item TEXT,
+  impact_score INTEGER DEFAULT 0,
   status TEXT NOT NULL,
   created_at INTEGER NOT NULL
 );
