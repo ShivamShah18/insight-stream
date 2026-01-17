@@ -68,7 +68,6 @@ const html = `
     <style>
         body { font-family: 'Inter', sans-serif; background-color: #F9FAFB; }
         .cf-orange { color: #F6821F; }
-        .bg-cf-orange { background-color: #F6821F; }
     </style>
 </head>
 <body class="text-slate-800">
@@ -76,7 +75,7 @@ const html = `
     <nav class="bg-white border-b border-slate-200 sticky top-0 z-50">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
             <div class="flex items-center gap-3">
-                <div class="w-8 h-8 bg-cf-orange rounded flex items-center justify-center">
+                <div class="w-8 h-8 bg-[#F6821F] rounded flex items-center justify-center">
                     <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
                 </div>
                 <div>
@@ -109,7 +108,7 @@ const html = `
                 </div>
                 <div class="bg-white px-4 py-2 rounded-lg border border-slate-200 shadow-sm">
                     <p class="text-xs text-slate-400 font-semibold uppercase">Avg Impact</p>
-                    <p class="text-lg font-bold text-cf-orange" id="avgImpact">-</p>
+                    <p class="text-lg font-bold text-[#F6821F]" id="avgImpact">-</p>
                 </div>
             </div>
         </div>
@@ -117,13 +116,12 @@ const html = `
         <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-1 mb-8">
             <div class="flex">
                 <input type="text" id="inputText" 
-                    class="flex-1 px-6 py-4 text-lg outline-none rounded-l-xl placeholder-slate-400" 
-                    placeholder="Paste customer feedback (e.g. 'Discord users reporting 500 errors on login')..." 
+                    class="flex-1 px-6 py-4 text-base outline-none rounded-l-xl placeholder-slate-400" 
+                    placeholder="Paste customer feedback..." 
                     onkeydown="if(event.key === 'Enter') submitFeedback()">
                 <button onclick="submitFeedback()" id="submitBtn" 
                     class="bg-slate-900 hover:bg-slate-800 text-white font-semibold px-8 py-4 rounded-r-lg transition-all flex items-center gap-2">
                     <span>Analyze</span>
-                    <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>
                 </button>
             </div>
         </div>
@@ -143,20 +141,15 @@ const html = `
                     </tbody>
             </table>
             
-            <div id="emptyState" class="hidden p-12 text-center">
-                <div class="inline-flex p-4 bg-slate-50 rounded-full mb-4">
-                    <svg class="w-6 h-6 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"></path></svg>
-                </div>
-                <h3 class="text-sm font-semibold text-slate-900">No feedback yet</h3>
-                <p class="text-sm text-slate-500 mt-1">Submit feedback above to start the triage engine.</p>
-            </div>
+            <div id="emptyState" class="hidden p-12 text-center text-sm text-slate-500">No feedback yet.</div>
         </div>
 
     </main>
 
     <script>
-        // Color Logic
-        function getImpactColor(score) {
+        // UPDATED: Green for Positive Sentiment!
+        function getImpactColor(score, sentiment) {
+            if (sentiment && sentiment.toLowerCase() === 'positive') return 'bg-green-500'; // Success!
             if (score >= 80) return 'bg-red-500';
             if (score >= 50) return 'bg-orange-400';
             return 'bg-blue-400';
@@ -174,10 +167,8 @@ const html = `
 
             if(!text) return;
 
-            // Optimistic UI: Disable button
-            btn.innerHTML = '<span class="animate-spin">⟳</span> Processing';
+            btn.innerHTML = '...';
             btn.disabled = true;
-            btn.classList.add('opacity-75');
 
             try {
                 await fetch('/submit', {
@@ -185,15 +176,13 @@ const html = `
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ text })
                 });
-                
                 input.value = '';
-                pollData(); // Force immediate update
-            } catch (err) {
-                alert('Error submitting feedback');
+                pollData();
+            } catch (err) { 
+                alert('Error'); 
             } finally {
-                btn.innerHTML = '<span>Analyze</span><svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>';
+                btn.innerHTML = 'Analyze';
                 btn.disabled = false;
-                btn.classList.remove('opacity-75');
                 input.focus();
             }
         }
@@ -220,43 +209,35 @@ const html = `
                 emptyState.classList.add('hidden');
                 
                 tbody.innerHTML = data.map(row => \`
-                    <tr class="hover:bg-slate-50 transition-colors group border-b border-slate-50 last:border-0">
-                        <td class="px-6 py-4 align-top">
-                            <p class="text-sm font-medium text-slate-900 line-clamp-2">\${row.raw_text}</p>
-                            <p class="text-xs text-slate-400 mt-1">\${new Date(row.created_at || Date.now()).toLocaleTimeString()}</p>
-                        </td>
-                        <td class="px-6 py-4 align-top">
-                            <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-slate-100 text-slate-700 border border-slate-200">
+                    <tr class="hover:bg-slate-50 transition-colors border-b border-slate-50">
+                        <td class="px-6 py-4 text-sm font-medium text-slate-900">\${row.raw_text}</td>
+                        <td class="px-6 py-4">
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-700 border border-slate-200">
                                 \${row.category || 'General'}
                             </span>
                         </td>
-                        <td class="px-6 py-4 align-middle">
+                        <td class="px-6 py-4">
                             <div class="flex flex-col gap-1 w-full max-w-[180px]">
                                 <div class="flex justify-between items-end">
                                     <span class="text-xs font-bold text-slate-700">\${row.impact_score || 0}</span>
-                                    \${(row.impact_score > 70) ? '<span class="text-[10px] text-red-600 font-bold uppercase tracking-wider">Critical</span>' : ''}
+                                    \${(row.impact_score > 80 && row.sentiment && row.sentiment.toLowerCase() !== 'positive') ? '<span class="text-[10px] text-red-600 font-bold uppercase tracking-wider">Critical</span>' : ''}
                                 </div>
                                 <div class="w-full h-2 bg-slate-100 rounded-full overflow-hidden">
-                                    <div class="h-full \${getImpactColor(row.impact_score || 0)} transition-all duration-500" style="width: \${getWidth(row.impact_score || 0)}"></div>
+                                    <div class="h-full \${getImpactColor(row.impact_score || 0, row.sentiment)} transition-all duration-500" style="width: \${getWidth(row.impact_score || 0)}"></div>
                                 </div>
                             </div>
                         </td>
-                        <td class="px-6 py-4 align-top">
-                             <div class="flex items-center gap-2">
-                                <span class="text-orange-500">⚡</span>
-                                <span class="text-sm font-mono font-semibold text-slate-700">\${row.action_item || 'Analyzing...'}</span>
-                             </div>
+                        <td class="px-6 py-4 flex items-center gap-2">
+                             <span class="text-orange-500">⚡</span>
+                             <span class="text-sm font-mono font-semibold text-slate-700">\${row.action_item || '...'}</span>
                         </td>
-                        <td class="px-6 py-4 align-top text-right">
-                            \${row.status === 'PENDING' 
-                                ? '<span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-50 text-yellow-700 border border-yellow-100"><span class="w-1.5 h-1.5 rounded-full bg-yellow-500 animate-pulse"></span> Processing</span>' 
-                                : '<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-white text-slate-600 border border-slate-200 shadow-sm">Done</span>'
-                            }
+                        <td class="px-6 py-4 text-right">
+                            <span class="text-xs font-medium text-slate-500">\${row.status === 'PENDING' ? 'Processing...' : 'Done'}</span>
                         </td>
                     </tr>
                 \`).join('');
 
-            } catch(e) { console.error("Poll failed", e); }
+            } catch(e) {}
         }
 
         // Start Loop

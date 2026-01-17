@@ -19,20 +19,21 @@ export class AnalysisWorkflow extends WorkflowEntrypoint<Env, Params> {
         const messages = [
             { 
             role: 'system', 
-            content: `You are a strict Technical Product Manager. Analyze this feedback and assign a "base_score" (0-100) based on BUSINESS RISK.
+            content: `You are a Technical Product Manager. Analyze feedback and assign a "base_score" (0-100) based on BUSINESS RISK.
 
             SCORING RULES:
-            - 90-100: CRITICAL OUTAGE (Site down, Payments failing, Security leak).
-            - 60-89: MAJOR BUG (Feature broken, Login failed, Error messages).
-            - 30-59: FEATURE REQUEST (Dark mode, New buttons, Enhancements).
-            - 0-29: COSMETIC / TRIVIAL (Typos, Colors, Copyright dates).
+            - 90-100: CRITICAL OUTAGE (Site down, Payments failing).
+            - 60-89: MAJOR BUG (Feature broken, Errors).
+            - 30-59: FEATURE REQUEST (New capabilities).
+            - 10-29: COSMETIC (Typos, Visuals).
+            - 0-9: PRAISE / POSITIVE (Success stories, "Love this").
 
             Return valid JSON only:
             {
               "sentiment": "Positive" | "Neutral" | "Negative",
-              "category": "Bug" | "Feature Request" | "Docs" | "Outage",
+              "category": "Bug" | "Feature Request" | "Docs" | "Outage" | "Praise",
               "urgency": "High" | "Medium" | "Low",
-              "base_score": <number based on rules above>,
+              "base_score": <number>,
               "action_item": "<2-5 word command>"
             }`
             },

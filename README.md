@@ -1,123 +1,70 @@
-# InsightStream: AI-Powered Feedback Triage System
+# InsightStream: Event-Driven Feedback Analysis
 
-**Live Demo:** [Your deployed worker URL]  
-**GitHub Repository:** [Your repo URL]
+**Live Demo:** [https://insight-stream.shah-shiv1620.workers.dev](https://insight-stream.shah-shiv1620.workers.dev)
 
-> Automatically aggregate, analyze, and prioritize product feedback from multiple sources using AI-powered triage.
+> **InsightStream** is an **Event-Driven Intelligence Pipeline** that ingests raw user feedback, instantly acknowledges receipt (<100ms latency), and asynchronously processes it to extract strategic actions.
 
-## 🎯 Problem
+## 🚀 The Challenge
+Product feedback is noisy. InsightStream is a unified feedback aggregation system that acts as an intelligent triage layer. It separates **Signal from Noise**, identifying critical outages immediately while also highlighting **Success Stories** to boost team morale.
 
-Product managers receive feedback from multiple sources daily:
-- Customer Support Tickets
-- Discord communities
-- GitHub issues
-- Email
-- X/Twitter
-- Community forums
+## 🏗 Architecture (Mission Aligned)
+Built on the **Cloudflare Developer Platform**, this architecture prioritizes **User-Perceived Latency** and **System Resilience**:
 
-This feedback is **noisy and scattered**, making it difficult to:
-- Extract themes and patterns
-- Determine urgency and priority
-- Identify which issues affect the most users
-- Take strategic action
-
-## 💡 Solution
-
-InsightStream is a unified feedback aggregation system that:
-
-1. **Aggregates** feedback from multiple APIs (Discord, GitHub, Support tickets, etc.)
-2. **Analyzes** each piece of feedback using AI to extract:
-   - Sentiment (Positive/Neutral/Negative)
-   - Category (Bug/Feature Request/Docs/Outage)
-   - Urgency (High/Medium/Low)
-   - Strategic action items
-3. **Prioritizes** based on:
-   - **Business risk** (outages > bugs > features > cosmetic)
-   - **Volume clustering** (issues mentioned by multiple users get higher priority)
-   - **Sentiment** (negative feedback prioritized over positive)
-
-## 🏗 Architecture
-
-Built on **Cloudflare's Developer Platform**:
-
-- **Cloudflare Workers** - Edge computing for instant API responses
-- **D1 Database** - Serverless SQLite for storing feedback
-- **Workers AI** - On-edge AI inference (Llama-3-8b-instruct) for analysis
-- **Workflows** - Async orchestration for processing pipeline
-
-### How It Works
-
-1. Feedback is ingested from various sources (Discord webhooks, GitHub issues, support tickets, etc.)
-2. Each feedback entry is immediately stored with "PENDING" status
-3. Async workflow analyzes the feedback using AI
-4. System calculates priority score based on:
-   - AI-determined business risk (0-100)
-   - Volume of similar feedback (duplicate issues get boosted)
-5. Results are displayed in a real-time dashboard, sorted by priority
+1.  **Ingestion (Cloudflare Workers):** Acts as a lightweight API Gateway. It accepts requests, writes a "Pending" state to D1, and returns `200 OK` immediately.
+2.  **Orchestration (Cloudflare Workflows):** Decouples heavy AI compute from the user-facing API. Manages retries and state, ensuring zero data loss during traffic spikes.
+3.  **Intelligence (Workers AI):** Utilizes `@cf/meta/llama-3-8b-instruct` with a custom "Lead PM" system prompt for semantic analysis.
+4.  **Priority Engine:** Implements a Volume-Adjusted Scoring algorithm that mathematically boosts the impact score of issues based on the frequency of similar reports.
+5.  **Persistence (Cloudflare D1):** Serverless SQLite database for structured state management.
 
 ## 🚀 Features
+- **Async Event Pipeline:** Non-blocking ingestion ensures the UI never hangs.
+- **Volume-Based Prioritization:** Issues mentioned by multiple users get a `+3` score boost per occurrence, bubbling frequent bugs to the top.
+- **Emotional Intelligence Triage:** Automatically detects **"Praise"** (Green Status) to boost team morale, while flagging **"Outages"** (Red Status) for immediate action.
+- **Real-Time Dashboard:** Auto-polling interface that groups feedback by strategic category.
 
-- **Multi-source aggregation** - Connect to Discord, GitHub, Support systems, etc.
-- **AI-powered analysis** - Automatic sentiment, category, and urgency detection
-- **Volume-based prioritization** - Issues mentioned by multiple users rank higher
-- **Real-time dashboard** - Auto-refreshing view of all feedback sorted by impact
-- **Strategic action items** - Each feedback gets a recommended next step
+## 🎯 Priority Scoring Logic
+The AI assigns a base score, which is then adjusted by the Volume Engine:
 
-## 📦 Setup
+- **90-100 (Red):** Critical Outages (Site down, payments failing, security leaks)
+- **60-89 (Orange):** Major Bugs (Feature broken, login failed, error messages)
+- **30-59 (Blue):** Feature Requests (Dark mode, enhancements)
+- **10-29 (Gray):** Cosmetic/Trivial (Typos, colors, copyright dates)
+- **0-9 (Green):** Praise & Positive Sentiment (Success stories, "Love this")
 
-### Prerequisites
-- Node.js 18+
-- Cloudflare account
-- Wrangler CLI
+**Volume boost:** Issues with multiple similar reports get **+3 points per duplicate**, ensuring popular problems surface to the top naturally.
 
-### Local Development
+## 🛠 Tech Stack
+- **Cloudflare Workflows** (Async Orchestration)
+- **Cloudflare D1** (Database)
+- **Workers AI** (Llama 3)
+- **TypeScript** & **Tailwind CSS**
 
+## 🏃‍♂️ Local Development
 ```bash
 npm install
 npx wrangler d1 execute insight-db --local --file=schema.sql
 npx wrangler dev
 ```
 
-### Deploy
-
-```bash
+## Deploy
+```
 npx wrangler deploy
 npx wrangler d1 execute insight-db --remote --file=schema.sql
 ```
 
-## 🎯 Priority Scoring
-
-Feedback is scored 0-100 based on:
-
-- **90-100:** Critical Outages (site down, payments failing, security leaks)
-- **60-89:** Major Bugs (feature broken, login failed, error messages)
-- **30-59:** Feature Requests (dark mode, new buttons, enhancements)
-- **0-29:** Cosmetic/Trivial (typos, colors, copyright dates)
-
-**Volume boost:** Issues with multiple similar reports get +3 points per duplicate, ensuring popular problems surface to the top.
-
 ## 🔗 Integration Vision
-
 This prototype demonstrates the core triage engine. In production, it would integrate with:
-
-- **Discord** - Webhook listener for community feedback
-- **GitHub** - Issue tracker integration
-- **Support Systems** - Ticket import APIs
-- **Email** - Inbox parsing for feedback emails
-- **Twitter/X** - Social media monitoring
-- **Community Forums** - RSS/API feeds
-
+- Discord - Webhook listener for community feedback
+- GitHub - Issue tracker integration
+- Support Systems - Ticket import APIs
+- Email - Inbox parsing for feedback emails
 All feedback flows into the same prioritization engine, giving PMs a unified view of what matters most.
 
 ## 📝 Vibe Coding Context
+This project was architected and built using Cursor (Claude 3.5 Sonnet) to accelerate the "Build" phase.
 
-- This project was architected and built using Cursor (Claude 3.5 Sonnet) to accelerate the "Build" phase.
-- **Platform: Cursor (AI-First Editor)**
-- Methodology: I utilized "Composer" to focus on System Design rather than syntax. My prompts focused on defining the schema and the data flow (e.g., "Refactor this synchronous API into an asynchronous Workflow pattern").
-- Outcome: This allowed me to spend 80% of my time on architectural decisions (choosing Workflows vs. Queues) and only 20% on writing boilerplate code.
+Platform: Cursor (AI-First Editor)
 
-## 📄 License
+Methodology: I utilized "Composer" to focus on System Design rather than syntax. My prompts focused on defining the schema and the data flow (e.g., "Refactor this synchronous API into an asynchronous Workflow pattern").
 
-MIT
-
----
+Outcome: This allowed me to spend 80% of my time on architectural decisions (choosing Workflows vs. Queues) and only 20% on writing boilerplate code.
