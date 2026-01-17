@@ -62,6 +62,6 @@ All feedback flows into the same prioritization engine, giving PMs a unified vie
 
 ## 📝 Vibe Coding Context
 This project was architected and built using Cursor (Claude 3.5 Sonnet) to accelerate the "Build" phase.
-Platform: Cursor (AI-First Editor)
-Methodology: I utilized "Composer" to focus on System Design rather than syntax. My prompts focused on defining the schema and the data flow (e.g., "Refactor this synchronous API into an asynchronous Workflow pattern").
-Outcome: This allowed me to spend 80% of my time on architectural decisions (choosing Workflows vs. Queues) and only 20% on writing boilerplate code.
+- Platform: Cursor (AI-First Editor)
+- Methodology: I utilized "Composer" to focus on System Design rather than syntax. My prompts focused on defining the schema and the data flow (e.g., "Refactor this synchronous API into an asynchronous Workflow pattern").
+- Outcome: This allowed me to spend 80% of my time on architectural decisions (choosing Workflows vs. Queues) and only 20% on writing boilerplate code.
